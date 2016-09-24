@@ -3,6 +3,8 @@
 #include <memory>
 #include <experimental/memory_resource>
 
+namespace std {
+
 /* Control block ­ One per domain */
 class haz_ptr_control_block;
 
@@ -32,9 +34,9 @@ class haz_ptr_guard {
 public:
   enum tc_policy { cache, nocache };
 
-  haz_ptr_guard(haz_ptr_guard&) = delete;
+  haz_ptr_guard(const haz_ptr_guard&) = delete;
   haz_ptr_guard(haz_ptr_guard&&) = delete;
-  haz_ptr_guard& operator=(haz_ptr_guard&) = delete;
+  haz_ptr_guard& operator=(const haz_ptr_guard&) = delete;
   haz_ptr_guard& operator=(haz_ptr_guard&&) = delete;
 
   haz_ptr_guard(tc_policy tc = tc_policy::cache,
@@ -48,8 +50,13 @@ public:
   void set(const T *ptr) noexcept;
   void clear() noexcept;
 
-  static void swap(haz_ptr_guard& a, haz_ptr_guard& b) noexcept;
+  void swap(haz_ptr_guard& other) noexcept;
 };
+
+void swap(haz_ptr_guard& a, haz_ptr_guard& b) noexcept
+{
+  return a.swap(b);
+}
 
 /** haz_ptr_control_block
  *
@@ -59,16 +66,18 @@ class haz_ptr_control_block {
 public:
   enum rem_policy { priv, shared };
 
-  haz_ptr_control_block(haz_ptr_control_block&) = delete;
+  haz_ptr_control_block(const haz_ptr_control_block&) = delete;
   haz_ptr_control_block(haz_ptr_control_block&&) = delete;
-  haz_ptr_control_block& operator=(haz_ptr_control_block&) = delete;
+  haz_ptr_control_block& operator=(const haz_ptr_control_block&) = delete;
   haz_ptr_control_block& operator=(haz_ptr_control_block&&) = delete;
 
   constexpr haz_ptr_control_block(std::pmr::memory_resource *);
 
   ~haz_ptr_control_block();
 
-  template<typename T, typename Allocator = std::allocator<T>>
+  template<typename T, typename Allocator>
   void reclaim(haz_ptr_obj<T, Allocator> *ptr,
                rem_policy rem = rem_policy::priv);
 };
+
+} // namespace std
