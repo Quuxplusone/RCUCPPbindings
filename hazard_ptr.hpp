@@ -6,77 +6,73 @@
 namespace std {
 
 /* Control block ­ One per domain */
-class haz_ptr_control_block;
+class hazard_domain;
 
-extern haz_ptr_control_block default_haz_ptr_control_block;
+extern hazard_domain default_hazard_domain;
 
-/** haz_ptr_obj
+/** enable_hazard_ptr
  *
  * Base class template for objects protected by hazard pointers.
  */
 template <typename T, typename Allocator = std::allocator<T>>
-class haz_ptr_obj {
+class enable_hazard_ptr {
   /* Pointer used in constructing lists of removed objects awaiting
      reclamation, without requiring additional allocation. */
-  haz_ptr_obj *next_removed_;
+  enable_hazard_ptr *next_removed_;
 
   /* Pointer to allocator to be used to reclaim object. */
   Allocator *alloc_;
 };
 
-/** haz_ptr_guard
+/** hazard_ptr
  *
  * Guard class template for RAII automatic allocation and release of hazard
  * pointers, and interface for user calls to hazard pointer functions.
  */
 template<typename T, typename Allocator = std::allocator<T>>
-class haz_ptr_guard {
+class hazard_ptr {
 public:
   enum tc_policy { cache, nocache };
 
-  haz_ptr_guard(const haz_ptr_guard&) = delete;
-  haz_ptr_guard(haz_ptr_guard&&) = delete;
-  haz_ptr_guard& operator=(const haz_ptr_guard&) = delete;
-  haz_ptr_guard& operator=(haz_ptr_guard&&) = delete;
+  hazard_ptr(const hazard_ptr&) = delete;
+  hazard_ptr(hazard_ptr&&) = delete;
+  hazard_ptr& operator=(const hazard_ptr&) = delete;
+  hazard_ptr& operator=(hazard_ptr&&) = delete;
 
-  haz_ptr_guard(tc_policy tc = tc_policy::cache,
-                haz_ptr_control_block *control_block
-                  = &default_haz_ptr_control_block
-                );
-
-  ~haz_ptr_guard();
+  hazard_ptr(tc_policy tc = tc_policy::cache, hazard_domain *control_block = &default_hazard_domain);
+  ~hazard_ptr();
 
   bool protect(const T *ptr, const std::atomic<T *>& src) noexcept;
   void set(const T *ptr) noexcept;
   void clear() noexcept;
 
-  void swap(haz_ptr_guard& other) noexcept;
+  void swap(hazard_ptr& other) noexcept;
 };
 
-void swap(haz_ptr_guard& a, haz_ptr_guard& b) noexcept
+void swap(hazard_ptr& a, hazard_ptr& b) noexcept
 {
   return a.swap(b);
 }
 
-/** haz_ptr_control_block
+/** hazard_domain
  *
  * Control block for hazard pointers. One per domain.
  */
-class haz_ptr_control_block {
+class hazard_domain {
 public:
   enum rem_policy { priv, shared };
 
-  haz_ptr_control_block(const haz_ptr_control_block&) = delete;
-  haz_ptr_control_block(haz_ptr_control_block&&) = delete;
-  haz_ptr_control_block& operator=(const haz_ptr_control_block&) = delete;
-  haz_ptr_control_block& operator=(haz_ptr_control_block&&) = delete;
+  hazard_domain(const hazard_domain&) = delete;
+  hazard_domain(hazard_domain&&) = delete;
+  hazard_domain& operator=(const hazard_domain&) = delete;
+  hazard_domain& operator=(hazard_domain&&) = delete;
 
-  constexpr haz_ptr_control_block(std::pmr::memory_resource *);
+  constexpr hazard_domain(std::pmr::memory_resource *);
 
-  ~haz_ptr_control_block();
+  ~hazard_domain();
 
   template<typename T, typename Allocator>
-  void reclaim(haz_ptr_obj<T, Allocator> *ptr,
+  void reclaim(enable_hazard_ptr<T, Allocator> *ptr,
                rem_policy rem = rem_policy::priv);
 };
 
