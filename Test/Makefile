@@ -14,8 +14,7 @@
 #
 # Copyright (c) 2016 Paul E. McKenney, IBM Corporation.
 
-PROGS = test1 test2 test3 test4 test5 test6 test7 test8
-#PROGS = test2 test3 test4 test5 test6 test7 test8
+PROGS = test1 test2 test3 test4 test5 test6 test7 test8 test9
 
 CXXFLAGS = -g -std=c++1z
 #CXXFLAGS = -g -std=c++11
@@ -61,6 +60,9 @@ test7: intrusive/test7.cpp
 	$(CXX) $(CXXFLAGS) -I./domains -o $@ $^ -pthread -lurcu -lurcu-signal
 
 test8: intrusive2/test8.cpp
+	$(CXX) $(CXXFLAGS) -I./domains -o $@ $^ -pthread -lurcu -lurcu-signal
+
+test9: ajodwyer/test9.cpp
 	$(CXX) $(CXXFLAGS) -I./domains -o $@ $^ -pthread -lurcu -lurcu-signal
 
 clean:
