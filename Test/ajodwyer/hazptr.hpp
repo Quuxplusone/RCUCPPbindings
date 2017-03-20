@@ -52,9 +52,11 @@ class hazptr_domain
     std::atomic<int> rcount_ = {0};
 };
 
-/** hazptr_obj_base: Base template for objects protected by hazard pointers. */
+// All hazptr-protected data structures must derive from std::hazptr::enable_retire_on_this,
+// which derives privately from ::hazptr_head.
+
 template <typename T, typename Deleter = std::default_delete<T>>
-class hazptr_obj_base : private hazptr_head {
+class enable_retire_on_this : private hazptr_head {
     Deleter deleter_;
   public:
     void retire(
@@ -63,7 +65,7 @@ class hazptr_obj_base : private hazptr_head {
     ) {
         deleter_ = std::move(deleter);
         reclaim_ = [](hazptr_head *p) {
-            auto hobp = static_cast<hazptr_obj_base*>(p);
+            auto hobp = static_cast<enable_retire_on_this*>(p);
             auto obj = static_cast<T*>(hobp);
             hobp->deleter_(obj);
         };

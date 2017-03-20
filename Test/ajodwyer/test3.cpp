@@ -4,7 +4,7 @@
 
 // Derived-type approach.
 
-struct foo: public std::rcu_obj_base<foo, void(*)(foo*)> {
+struct foo: public std::rcu::enable_retire_on_this<foo, void(*)(foo*)> {
     int a;
 };
 
@@ -19,7 +19,7 @@ int main(int argc, char **argv)
 {
     std::rcu::rcu_domain rs;
 
-    printf("%zu %zu %zu\n", sizeof(rcu_head), sizeof(std::rcu_obj_base<foo, void(*)(foo*)>), sizeof(foo));
+    printf("%zu %zu %zu\n", sizeof(rcu_head), sizeof(std::rcu::enable_retire_on_this<foo, void(*)(foo*)>), sizeof(foo));
 
     // First with a normal function.
     foo1.a = 42;

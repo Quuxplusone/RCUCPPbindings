@@ -24,7 +24,7 @@
 
 template <typename T>
 class LockFreeLIFO {
-    class Node : public std::hazptr::hazptr_obj_base<Node> {
+    class Node : public std::hazptr::enable_retire_on_this<Node> {
         friend LockFreeLIFO;
         T value_;
         Node *next_;

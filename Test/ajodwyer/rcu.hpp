@@ -3,19 +3,20 @@
 #include <cstddef>
 #include <memory>
 #include <utility>
+#include "rcu_domain.hpp"
 
-// Derived-type approach.  All RCU-protected data structures using this
-// approach must derive from std::rcu_obj_base, which in turn derives
-// from std::rcu_head.  No idea what happens in case of multiple inheritance.
+// All RCU-protected data structures must derive from std::rcu::enable_retire_on_this,
+// which derives privately from ::rcu_head.
 
 namespace std {
+namespace rcu {
     template<typename T, typename D = default_delete<T>, bool E = is_empty<D>::value>
-    class rcu_obj_base: private rcu_head {
+    class enable_retire_on_this: private rcu_head {
         D deleter;
     public:
         static void trampoline(rcu_head *rhp)
         {
-            auto rhdp = static_cast<rcu_obj_base *>(rhp);
+            auto rhdp = static_cast<enable_retire_on_this *>(rhp);
             auto obj = static_cast<T *>(rhdp);
             rhdp->deleter(obj);
         }
@@ -37,11 +38,11 @@ namespace std {
     // Specialization for when D is an empty type.
 
     template<typename T, typename D>
-    class rcu_obj_base<T,D,true>: private rcu_head {
+    class enable_retire_on_this<T,D,true>: private rcu_head {
     public:
         static void trampoline(rcu_head *rhp)
         {
-            auto rhdp = static_cast<rcu_obj_base *>(rhp);
+            auto rhdp = static_cast<enable_retire_on_this *>(rhp);
             auto obj = static_cast<T *>(rhdp);
             D()(obj);
         }
@@ -56,4 +57,5 @@ namespace std {
             rd.retire(static_cast<rcu_head *>(this), trampoline);
         }
     };
+} // namespace rcu
 } // namespace std
