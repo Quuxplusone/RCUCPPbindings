@@ -4,7 +4,7 @@
 #include <utility> // std::forward
 #include <memory> // std::default_delete
 
-#include "urcu-signal.hpp"
+#include "rcu_domain.hpp"
 
 namespace std { namespace experimental {
 
@@ -13,7 +13,6 @@ namespace std { namespace experimental {
 // (Paul's code would go here)
 
 using rcu_head = ::rcu_head;
-using rcu_domain = ::std::rcu_domain;
 
 void call_rcu(
   rcu_head *_Rhp,
@@ -30,9 +29,8 @@ struct __nat {};
 
 template <typename _T>
 struct is_rcu_domain {
-  // for now, just use is_base_of...
-  static constexpr bool value = ::std::is_base_of<
-    rcu_domain, _T
+  static constexpr bool value = ::std::is_same<
+    ::std::rcu::rcu_domain, _T
   >::value;
 };
 

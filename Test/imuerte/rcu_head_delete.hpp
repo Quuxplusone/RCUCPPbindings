@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <memory>
+#include "rcu_domain.hpp"
 
 // Derived-type approach, according to Isabella Muerte.
 
@@ -23,7 +24,7 @@ namespace std {
             });
         }
 
-        void retire(rcu_domain& rd) {
+        void retire(std::rcu::rcu_domain& rd) {
             rd.retire(this, +[] (rcu_head * rhp) {
                 auto self = static_cast<T*>(rhp);
                 self->get_deleter()(self);

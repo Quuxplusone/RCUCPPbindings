@@ -1,6 +1,5 @@
 #include <iostream>
 #include <unistd.h>
-#include "urcu-signal.hpp"
 #include "rcu.hpp"
 
 // Derived-type approach.
@@ -18,7 +17,7 @@ struct foo foo1;
 
 int main(int argc, char **argv)
 {
-    std::rcu_signal rs;
+    std::rcu::rcu_domain rs;
 
     printf("%zu %zu %zu\n", sizeof(rcu_head), sizeof(std::rcu_obj_base<foo, void(*)(foo*)>), sizeof(foo));
 

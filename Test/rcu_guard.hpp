@@ -1,3 +1,7 @@
+#pragma once
+
+#include "rcu_domain.hpp"
+
 class rcu_guard {
 public:
     rcu_guard() noexcept
@@ -6,9 +10,8 @@ public:
         ::rcu_read_lock();
     }
 
-    explicit rcu_guard(std::rcu_domain *rd)
+    explicit rcu_guard(std::rcu::rcu_domain& d) : rd(&d)
     {
-        this->rd = rd;
         rd->read_lock();
     }
 
@@ -24,5 +27,5 @@ public:
     }
 
 private:
-    std::rcu_domain *rd;
+    std::rcu::rcu_domain *rd;
 };

@@ -6,9 +6,10 @@
 #include <vector>
 #include <future>
 #include <iostream>
-#include "rcu_domain.hpp"
+#include <urcu.h>
 
 namespace std {
+namespace rcu {
 
 thread_local int tl_urcu_rv_tid = -1;
 
@@ -31,7 +32,7 @@ thread_local int tl_urcu_rv_tid = -1;
  *
  *
  */
-class rcu_rv: public rcu_domain {
+class rcu_domain {
 
     static const int CLPAD = (128/sizeof(uint64_t));
     static const uint64_t NOT_READING = 0xFFFFFFFFFFFFFFFE;
@@ -41,10 +42,10 @@ class rcu_rv: public rcu_domain {
     std::atomic<uint64_t> reclaimerVersion alignas(128) = { 0 };
     std::atomic<uint64_t>* readersVersion alignas(128);
     std::mutex listMutex;
-    std::vector<future<void>> futureList;
+    std::vector<std::future<void>> futureList;
 
 public:
-    rcu_rv(const int maxThreads=32): maxThreads{maxThreads}
+    rcu_domain(const int maxThreads=32): maxThreads{maxThreads}
     {
         readersVersion = new std::atomic<uint64_t>[maxThreads*CLPAD];
         for (int i=0; i < maxThreads; i++) {
@@ -52,7 +53,7 @@ public:
         }
     }
 
-    ~rcu_rv() {
+    ~rcu_domain() {
         delete[] readersVersion;
     }
 
@@ -137,5 +138,10 @@ public:
     void quiescent_state() noexcept { read_lock(); }
     void thread_offline() noexcept { read_unlock(); }
     void thread_online() noexcept { read_lock(); }
+
+    static constexpr bool register_thread_needed() { return true; }
+    static constexpr bool quiescent_state_needed() { return false; }
 };
+
+} // namespace rcu
 } // namespace std

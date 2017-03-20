@@ -1,7 +1,6 @@
 #include <iostream>
 #include <string>
 #include <unistd.h>
-#include <urcu.h>
 #include "rcu_domain.hpp"
 
 struct foo {
@@ -16,7 +15,7 @@ void my_func(rcu_head *rhp)
 	std::cout << "Hello World from a callback!\n";
 }
 
-void synchronize_rcu_abstract(std::rcu_domain &p, std::string s)
+void synchronize_rcu_abstract(std::rcu::rcu_domain& p, std::string s)
 {
 	std::cout << s << "\n";
 	p.register_thread();
@@ -29,11 +28,7 @@ void synchronize_rcu_abstract(std::rcu_domain &p, std::string s)
 	p.unregister_thread();
 }
 
-extern std::rcu_domain &rb;
-extern std::rcu_domain &rm;
-extern std::rcu_domain &rq;
-extern std::rcu_domain &rs;
-extern std::rcu_domain &rv;
+std::rcu::rcu_domain rd;
 
 int main()
 {
@@ -46,9 +41,5 @@ int main()
 	rcu_barrier();
 	rcu_unregister_thread();
 
-	synchronize_rcu_abstract(rb, "Derived class rcu_bp");
-	synchronize_rcu_abstract(rm, "Derived class rcu_mb");
-	synchronize_rcu_abstract(rq, "Derived class rcu_qsbr");
-	synchronize_rcu_abstract(rs, "Derived class rcu_signal");
-	synchronize_rcu_abstract(rv, "Derived class rcu_rv");
+	synchronize_rcu_abstract(rd, "std::rcu::rcu_domain");
 }
