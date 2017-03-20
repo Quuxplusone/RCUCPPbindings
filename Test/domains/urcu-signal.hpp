@@ -1,11 +1,12 @@
 #pragma once
 
-#include "rcu_domain.hpp"
-
 #define RCU_SIGNAL
 #include <urcu.h>
 
-class rcu_domain_signal {
+namespace std {
+namespace rcu {
+
+class rcu_domain {
 public:
     static constexpr bool register_thread_needed() { return true; }
     void register_thread() { rcu_register_thread(); }
@@ -24,3 +25,6 @@ public:
     void synchronize() noexcept { synchronize_rcu(); }
     void barrier() noexcept { rcu_barrier(); }
 };
+
+} // namespace rcu
+} // namespace std

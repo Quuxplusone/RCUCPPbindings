@@ -14,7 +14,7 @@
 #
 # Copyright (c) 2016 Paul E. McKenney, IBM Corporation.
 
-PROGS = test1 test2 test3 test4 test5 test6 test7 test8 test10
+PROGS = test1 test2 test3 test4 test5b test5m test5q test5s test5v test6 test7 test8 test10
 #PROGS = test2 test3 test4 test5 test6 test7 test8 test10
 
 CXXFLAGS = -g -std=c++1z
@@ -51,8 +51,20 @@ test3: ajodwyer/test3.cpp
 test4: test4.cpp
 	$(CXX) $(CXXFLAGS) -I./domains -o $@ $^ -pthread -lurcu -lurcu-signal
 
-test5: domains/test5.cpp domains/test5b.cpp domains/test5m.cpp domains/test5q.cpp domains/test5s.cpp domains/test5v.cpp
-	$(CXX) $(CXXFLAGS) -o $@ $^ -pthread -lurcu -lurcu-bp -lurcu-mb -lurcu-qsbr -lurcu-signal
+test5b: domains/test5.cpp
+	$(CXX) $(CXXFLAGS) -DUSE_URCU_BP -o $@ $^ -pthread -lurcu -lurcu-bp
+
+test5m: domains/test5.cpp
+	$(CXX) $(CXXFLAGS) -DUSE_URCU_MB -o $@ $^ -pthread -lurcu -lurcu-mb
+
+test5q: domains/test5.cpp
+	$(CXX) $(CXXFLAGS) -DUSE_URCU_QSBR -o $@ $^ -pthread -lurcu -lurcu-qsbr
+
+test5s: domains/test5.cpp
+	$(CXX) $(CXXFLAGS) -DUSE_URCU_SIGNAL -o $@ $^ -pthread -lurcu -lurcu-signal
+
+test5v: domains/test5.cpp
+	$(CXX) $(CXXFLAGS) -DUSE_URCU_RV -o $@ $^ -pthread -lurcu
 
 test6: imuerte/test6.cpp
 	$(CXX) $(CXXFLAGS) -I./domains -o $@ $^ -pthread -lurcu -lurcu-signal

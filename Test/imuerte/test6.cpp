@@ -1,6 +1,6 @@
 #include <iostream>
 #include <unistd.h>
-#include "urcu-signal.hpp"
+#include "rcu_domain.hpp"
 #include "rcu_head_delete.hpp"
 
 // Derived-type approach.
@@ -24,7 +24,7 @@ int main(int argc, char **argv)
 {
     struct bar my_bar;
     struct foo *fp = new struct foo;
-    rcu_domain_signal rs;
+    std::rcu::rcu_domain rs;
 
     // First with a normal function.
     fp->a = 42;

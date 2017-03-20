@@ -6,7 +6,10 @@
 #include <vector>
 #include <future>
 #include <iostream>
-#include "rcu_domain.hpp"
+#include <urcu.h>
+
+namespace std {
+namespace rcu {
 
 thread_local int tl_urcu_rv_tid = -1;
 
@@ -29,7 +32,7 @@ thread_local int tl_urcu_rv_tid = -1;
  *
  *
  */
-class rcu_domain_rv {
+class rcu_domain {
 
     static const int CLPAD = (128/sizeof(uint64_t));
     static const uint64_t NOT_READING = 0xFFFFFFFFFFFFFFFE;
@@ -42,7 +45,7 @@ class rcu_domain_rv {
     std::vector<std::future<void>> futureList;
 
 public:
-    rcu_domain_rv(const int maxThreads=32): maxThreads{maxThreads}
+    rcu_domain(const int maxThreads=32): maxThreads{maxThreads}
     {
         readersVersion = new std::atomic<uint64_t>[maxThreads*CLPAD];
         for (int i=0; i < maxThreads; i++) {
@@ -50,7 +53,7 @@ public:
         }
     }
 
-    ~rcu_domain_rv() {
+    ~rcu_domain() {
         delete[] readersVersion;
     }
 
@@ -139,3 +142,6 @@ public:
     static constexpr bool register_thread_needed() { return true; }
     static constexpr bool quiescent_state_needed() { return false; }
 };
+
+} // namespace rcu
+} // namespace std

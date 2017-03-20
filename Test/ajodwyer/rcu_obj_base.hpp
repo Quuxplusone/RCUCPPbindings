@@ -26,8 +26,7 @@ namespace std {
             ::call_rcu(static_cast<rcu_head *>(this), trampoline);
         }
 
-        template<class RcuDomain>
-        void retire(RcuDomain& rd, D d = {})
+        void retire(std::rcu::rcu_domain& rd, D d = {})
         {
             deleter = std::move(d);
             rd.retire(static_cast<rcu_head *>(this), trampoline);
@@ -52,8 +51,7 @@ namespace std {
             ::call_rcu(static_cast<rcu_head *>(this), trampoline);
         }
 
-        template<class RcuDomain>
-        void retire(RcuDomain& rd, D = {})
+        void retire(std::rcu::rcu_domain& rd, D = {})
         {
             rd.retire(static_cast<rcu_head *>(this), trampoline);
         }

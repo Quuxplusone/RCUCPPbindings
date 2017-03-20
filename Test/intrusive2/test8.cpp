@@ -1,6 +1,6 @@
 #include <iostream>
 #include <unistd.h>
-#include "urcu-signal.hpp"
+#include "rcu_domain.hpp"
 #include "rcu_head_ptr.hpp"
 
 // Added-pointer approach
@@ -25,7 +25,7 @@ struct foo foo1(42);
 int main(int argc, char **argv)
 {
 	struct foo *fp;
-	rcu_domain_signal rs;
+	std::rcu::rcu_domain rs;
 
 	foo1.rh = &foo1;
 	foo1.rh.retire(my_cb);

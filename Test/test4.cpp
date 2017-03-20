@@ -1,15 +1,15 @@
-#include "urcu-signal.hpp"
+#include "rcu_domain.hpp"
 #include "rcu_guard.hpp"
 
 int main()
 {
-    rcu_domain_signal rs;
+    std::rcu::rcu_domain rs;
     rcu_register_thread();
     {
-            rcu_guard<rcu_domain_signal> rr;
+            rcu_guard rr;
     }
     {
-            rcu_guard<rcu_domain_signal> rrs(rs);
+            rcu_guard rrs(rs);
     }
     rcu_unregister_thread();
 
