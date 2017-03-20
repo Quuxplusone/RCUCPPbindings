@@ -1,9 +1,29 @@
 #include <atomic>
+#include <cassert>
 #include <memory>
 #include <thread>
 #include <vector>
-#include "urcu-signal.hpp"
-#include "rcu_cell.hpp"
+
+#if USE_RCU_CELL
+ #include "rcu.hpp"
+ #include "rcu_cell.hpp"
+ using std::rcu::cell;
+ using std::rcu::snapshot_ptr;
+ #define ASSERT_SUCCESSFUL_CLEANUP() do { rcu_barrier(); assert(A::live_objects == 0); } while (0)
+#elif USE_HAZPTR_CELL
+ #include "hazptr.hpp"
+ #include "hazptr_cell.hpp"
+ using std::hazptr::cell;
+ using std::hazptr::snapshot_ptr;
+ #define ASSERT_SUCCESSFUL_CLEANUP() do { hazptr_barrier(); assert(A::live_objects == 0); } while (0)
+ void hazptr_barrier()
+ {
+     auto& dom = get_default_hazptr_domain();
+     using D = std::hazptr::hazptr_domain;
+     dom.~D();
+     new (&dom) D();
+ }
+#endif
 
 struct A {
     static std::atomic<int> live_objects;
@@ -20,7 +40,7 @@ std::atomic<int> A::live_objects{};
 
 void test_simple()
 {
-    std::rcu::cell<A> c;
+    cell<A> c;
     c.update(std::make_unique<A>(42));
     auto sp1 = c.get_snapshot();
     c.update(std::make_unique<A>(43));
@@ -37,9 +57,9 @@ void test_simple()
 
 void test_outliving()
 {
-    std::rcu::snapshot_ptr<A> sp = nullptr;
+    snapshot_ptr<A> sp = nullptr;
     if (true) {
-        std::rcu::cell<A> c(std::make_unique<A>(314));
+        cell<A> c(std::make_unique<A>(314));
         sp = c.get_snapshot();
     }
     assert(sp != nullptr);
@@ -50,7 +70,7 @@ void test_shared_ptr()
 {
     std::shared_ptr<A> shptr;
     if (true) {
-        std::rcu::cell<A> c(std::make_unique<A>(314));
+        cell<A> c(std::make_unique<A>(314));
         auto sp = c.get_snapshot();
         shptr = std::move(sp);
         assert(shptr);
@@ -63,7 +83,7 @@ void test_shared_ptr()
 
 void test_thread_safety()
 {
-    std::rcu::cell<A> c(std::make_unique<A>(0));
+    cell<A> c(std::make_unique<A>(0));
     std::thread t[100];
     for (int i=0; i < 100; ++i) {
         t[i] = std::thread([i, &c]{
@@ -103,7 +123,7 @@ void test_non_race_free_type()
         }
         printf("\n");
     };
-    std::rcu::cell<std::vector<A>> c(the_zero_vector());
+    cell<std::vector<A>> c(the_zero_vector());
     std::thread t[10];
     for (int i=0; i < 10; ++i) {
         t[i] = std::thread([i, &c]{
@@ -128,14 +148,14 @@ void test_non_race_free_type()
 int main(int argc, char **argv)
 {
     test_simple();
-    rcu_barrier(); assert(A::live_objects == 0);
+    ASSERT_SUCCESSFUL_CLEANUP();
     test_outliving();
-    rcu_barrier(); assert(A::live_objects == 0);
+    ASSERT_SUCCESSFUL_CLEANUP();
     test_shared_ptr();
-    rcu_barrier(); assert(A::live_objects == 0);
+    ASSERT_SUCCESSFUL_CLEANUP();
     test_thread_safety();
-    rcu_barrier(); assert(A::live_objects == 0);
+    ASSERT_SUCCESSFUL_CLEANUP();
     test_non_race_free_type();
-    rcu_barrier(); assert(A::live_objects == 0);
+    ASSERT_SUCCESSFUL_CLEANUP();
     return 0;
 }

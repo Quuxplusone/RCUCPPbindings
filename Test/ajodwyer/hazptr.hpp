@@ -73,31 +73,57 @@ class enable_retire_on_this : private hazptr_head {
     }
 };
 
-template <typename T>
+template <typename T = void>
 class hazptr_owner {
     hazptr_domain *domain_;
     hazptr_domain::hazard_pointer *hazptr_;
+
+    template<class> friend class hazptr_owner;  // for move-assignment
   public:
+    constexpr explicit hazptr_owner() noexcept : domain_(nullptr), hazptr_(nullptr) {}
+
     explicit hazptr_owner(hazptr_domain& d) : domain_(&d) {
         hazptr_ = domain_->acquire();
     }
 
-    ~hazptr_owner() {
-        domain_->release(hazptr_);
+    hazptr_owner(const hazptr_owner&) = delete;
+    hazptr_owner& operator= (const hazptr_owner&) = delete;
+
+    hazptr_owner(hazptr_owner&& rhs) : domain_(rhs.domain_), hazptr_(rhs.hazptr_) {
+        rhs.domain_ = nullptr;
+        rhs.hazptr_ = nullptr;
+    }
+    hazptr_owner& operator= (hazptr_owner&& rhs) {
+        // Explicitly protect against self-assignment, so as to avoid leaks.
+        if (this != &rhs) {
+            if (domain_) {
+                domain_->release(hazptr_);
+            }
+            domain_ = rhs.domain_; rhs.domain_ = nullptr;
+            hazptr_ = rhs.hazptr_; rhs.hazptr_ = nullptr;
+        }
+        return *this;
     }
 
-    // This class is fundamentally moveable, but if we make it moveable, we need to
-    // provide for an "empty" or "moved-from" state. Right now it's analogous to
-    // std::lock_guard.
-    hazptr_owner(const hazptr_owner&) = delete;
+    template<class U, typename = std::enable_if_t<std::is_convertible<U*,T*>::value>>
+    hazptr_owner(hazptr_owner<U>&& rhs) : domain_(rhs.domain_), hazptr_(rhs.hazptr_) {
+        rhs.domain_ = nullptr;
+        rhs.hazptr_ = nullptr;
+    }
 
-    void set(const T *p) noexcept { domain_->set(hazptr_, p); }
-    void reset() noexcept { domain_->set(hazptr_, nullptr); }
+    ~hazptr_owner() {
+        if (domain_) {
+            domain_->release(hazptr_);
+        }
+    }
+
+    void set(const T *p) { domain_->set(hazptr_, p); }
+    void reset() { domain_->set(hazptr_, nullptr); }
 
     /** Hazard pointer operations */
     /* Returns a protected pointer from the source */
     template <typename Atomic>
-    T *get_protected(const Atomic& src) noexcept {
+    T *get_protected(const Atomic& src) {
         T *p = src.load();
         while (!try_protect(p, src)) {
             // spin
@@ -108,7 +134,7 @@ class hazptr_owner {
     /* Return true if successful in protecting ptr if src == ptr after
      * setting the hazard pointer.  Otherwise sets ptr to src. */
     template <typename A>
-    bool try_protect(T*& ptr, const A& src) noexcept {
+    bool try_protect(T*& ptr, const A& src) {
         this->set(ptr);
         T* p = src.load();
         if (p == ptr) {
