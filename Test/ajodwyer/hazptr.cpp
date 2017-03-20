@@ -16,13 +16,16 @@
  * limitations under the License.
  */
 
-#include "hp-folly.hpp"
+#include "hazptr.hpp"
 #include <atomic>
 #include <unordered_set>
 
 static const int SCAN_THRESHOLD = 3;
 
-hp_domain_folly::~hp_domain_folly()
+namespace std {
+namespace hazptr {
+
+hazptr_domain::~hazptr_domain()
 {
     if (true) {
         hazard_pointer *next;
@@ -40,7 +43,7 @@ hp_domain_folly::~hp_domain_folly()
     }
 }
 
-hp_domain_folly::hazard_pointer *hp_domain_folly::acquire()
+hazptr_domain::hazard_pointer *hazptr_domain::acquire()
 {
     hazard_pointer *p;
     for (p = hazptrs_.load(); p; p = p->next_) {
@@ -63,12 +66,7 @@ hp_domain_folly::hazard_pointer *hp_domain_folly::acquire()
     return p;
 }
 
-void hp_domain_folly::release(hazard_pointer *p) noexcept
-{
-    p->release();
-}
-
-void hp_domain_folly::retire(hazptr_head *p)
+void hazptr_domain::retire(hazptr_head *p)
 {
     int rcount = pushRetired(p, p, 1) + 1;
     if (rcount >= SCAN_THRESHOLD * hcount_.load()) {
@@ -76,7 +74,7 @@ void hp_domain_folly::retire(hazptr_head *p)
     }
 }
 
-void hp_domain_folly::tryBulkReclaim()
+void hazptr_domain::tryBulkReclaim()
 {
     while (true) {
         auto number_of_hazard_pointers = hcount_.load();
@@ -91,7 +89,7 @@ void hp_domain_folly::tryBulkReclaim()
     }
 }
 
-void hp_domain_folly::bulkReclaim()
+void hazptr_domain::bulkReclaim()
 {
     auto p = retired_.exchange(nullptr);
     if (p == nullptr) {
@@ -125,7 +123,7 @@ void hp_domain_folly::bulkReclaim()
     }
 }
 
-int hp_domain_folly::pushRetired(hazptr_head *head, hazptr_head *tail, int count)
+int hazptr_domain::pushRetired(hazptr_head *head, hazptr_head *tail, int count)
 {
     tail->next_ = retired_.load();
     while (!retired_.compare_exchange_weak(tail->next_, head)) {
@@ -133,3 +131,6 @@ int hp_domain_folly::pushRetired(hazptr_head *head, hazptr_head *tail, int count
     }
     return rcount_.fetch_add(count);
 }
+
+} // namespace hazptr
+} // namespace std

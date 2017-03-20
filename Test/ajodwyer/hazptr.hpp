@@ -12,36 +12,44 @@ struct hazptr_head {
 namespace std {
 namespace hazptr {
 
-class hazptr_domain_base {
-public:
-    using hazard_pointer = void;
+class hazptr_domain
+{
+    class hazard_pointer
+    {
+        std::atomic<const void *> hazptr_;
+        hazard_pointer *next_;
+        std::atomic<bool> active_;
 
-    hazptr_domain_base() noexcept = default;
-    hazptr_domain_base(const hazptr_domain_base&) = delete;
-    virtual ~hazptr_domain_base() = default;
+        friend class hazptr_domain;
+      public:
+        hazard_pointer() : hazptr_(nullptr), next_(nullptr), active_(false) {}
+        void set(const void *p) noexcept { hazptr_.store(p); }
+        const void *get() const noexcept { return hazptr_.load(); }
+        void release() noexcept { set(nullptr); active_.store(false); }
+    };
 
-    virtual hazard_pointer *acquire() = 0;
-    virtual void release(hazard_pointer *) = 0;
-    virtual void set(hazard_pointer *, const void *) noexcept = 0;
+  public:
+    constexpr explicit hazptr_domain() noexcept = default;
+    hazptr_domain(const hazptr_domain&) = delete;
+    ~hazptr_domain();
 
-    virtual void retire(hazptr_head *) = 0;
-};
+    void retire(hazptr_head *);
 
-template<class Domain>
-class hazptr_domain_wrapper : public hazptr_domain_base {
-    Domain *d;
-    using wrapped_hazard_pointer = typename Domain::hazard_pointer;
-    static auto W(void *hp) noexcept {
-        return static_cast<wrapped_hazard_pointer *>(hp);
-    }
-public:
-    hazptr_domain_wrapper(Domain& d) noexcept : d(&d) {}
+  private:
+    template<class> friend class hazptr_owner;
 
-    hazard_pointer *acquire() override { return (void *)d->acquire(); }
-    void release(hazard_pointer *hp) override { d->release(W(hp)); }
-    void set(hazard_pointer *hp, const void *p) noexcept override { d->set(W(hp), p); }
+    hazard_pointer *acquire();
+    void release(hazard_pointer *hp) noexcept { hp->release(); }
+    void set(hazard_pointer *hp, const void *p) noexcept { hp->set(p); }
 
-    void retire(hazptr_head *obj) override { d->retire(obj); }
+    void tryBulkReclaim();
+    void bulkReclaim();
+    int pushRetired(hazptr_head *head, hazptr_head *tail, int count);
+
+    std::atomic<hazard_pointer *> hazptrs_ = {nullptr};
+    std::atomic<hazptr_head *> retired_ = {nullptr};
+    std::atomic<int> hcount_ = {0};
+    std::atomic<int> rcount_ = {0};
 };
 
 /** hazptr_obj_base: Base template for objects protected by hazard pointers. */
@@ -49,9 +57,8 @@ template <typename T, typename Deleter = std::default_delete<T>>
 class hazptr_obj_base : private hazptr_head {
     Deleter deleter_;
   public:
-    template<typename Domain>
     void retire(
-        Domain& domain,
+        hazptr_domain& domain,
         Deleter deleter = {}
     ) {
         deleter_ = std::move(deleter);
@@ -66,12 +73,10 @@ class hazptr_obj_base : private hazptr_head {
 
 template <typename T>
 class hazptr_owner {
-    // This type-erasure is expensive. But we could easily avoid the memory allocation if we wanted to.
-    std::unique_ptr<hazptr_domain_base> domain_;
-    hazptr_domain_base::hazard_pointer *hazptr_;
+    hazptr_domain *domain_;
+    hazptr_domain::hazard_pointer *hazptr_;
   public:
-    template<typename Domain>
-    explicit hazptr_owner(Domain& d) : domain_(new hazptr_domain_wrapper<Domain>(d)) {
+    explicit hazptr_owner(hazptr_domain& d) : domain_(&d) {
         hazptr_ = domain_->acquire();
     }
 

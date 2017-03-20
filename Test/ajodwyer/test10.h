@@ -18,7 +18,6 @@
  */
 
 #include "hazptr.hpp"
-#include "hp-folly.hpp"
 #include <atomic>
 #include <stdexcept>
 #include <utility>
@@ -33,7 +32,7 @@ class LockFreeLIFO {
     };
 
   public:
-    LockFreeLIFO(hp_domain_folly& d) : head_(nullptr), domain_(&d) {}
+    LockFreeLIFO(std::hazptr::hazptr_domain& d) : head_(nullptr), domain_(&d) {}
     LockFreeLIFO(const LockFreeLIFO&) = delete;
     ~LockFreeLIFO() = default;
 
@@ -67,5 +66,5 @@ class LockFreeLIFO {
 
   private:
     std::atomic<Node*> head_;
-    hp_domain_folly *domain_;
+    std::hazptr::hazptr_domain *domain_;
 };

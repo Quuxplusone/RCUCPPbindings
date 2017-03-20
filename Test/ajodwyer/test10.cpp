@@ -1,11 +1,11 @@
-#include "hp-folly.hpp"
+#include "hazptr.hpp"
 #include "test10.h"
 #include <cassert>
 #include <cstdio>
 
 int main()
 {
-    hp_domain_folly domain;
+    std::hazptr::hazptr_domain domain;
     LockFreeLIFO<int> lst(domain);
     lst.push(1);
     lst.push(2);

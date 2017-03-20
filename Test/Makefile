@@ -63,7 +63,7 @@ test7: intrusive/test7.cpp
 test8: intrusive2/test8.cpp
 	$(CXX) $(CXXFLAGS) -I./domains -o $@ $^ -pthread -lurcu -lurcu-signal
 
-test10: ajodwyer/test10.cpp ajodwyer/hp-folly.cpp
+test10: ajodwyer/test10.cpp ajodwyer/hazptr.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $^ -pthread
 
 clean:
