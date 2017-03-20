@@ -43,11 +43,11 @@ class hp_domain_folly
     hp_domain_folly(const hp_domain_folly&) = delete;
     ~hp_domain_folly();
 
-    hazard_pointer *hazptrAcquire();
-    void hazptrRelease(hazard_pointer *) noexcept;
-    void hazptrSet(hazard_pointer *rec, const void *p) noexcept { rec->set(p); }
+    hazard_pointer *acquire();
+    void release(hazard_pointer *) noexcept;
+    void set(hazard_pointer *rec, const void *p) noexcept { rec->set(p); }
 
-    void objRetire(hazptr_head *);
+    void retire(hazptr_head *);
 
   private:
     void tryBulkReclaim();

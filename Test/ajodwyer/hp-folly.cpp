@@ -40,7 +40,7 @@ hp_domain_folly::~hp_domain_folly()
     }
 }
 
-hp_domain_folly::hazard_pointer *hp_domain_folly::hazptrAcquire()
+hp_domain_folly::hazard_pointer *hp_domain_folly::acquire()
 {
     hazard_pointer *p;
     for (p = hazptrs_.load(); p; p = p->next_) {
@@ -63,12 +63,12 @@ hp_domain_folly::hazard_pointer *hp_domain_folly::hazptrAcquire()
     return p;
 }
 
-void hp_domain_folly::hazptrRelease(hazard_pointer *p) noexcept
+void hp_domain_folly::release(hazard_pointer *p) noexcept
 {
     p->release();
 }
 
-void hp_domain_folly::objRetire(hazptr_head *p)
+void hp_domain_folly::retire(hazptr_head *p)
 {
     int rcount = pushRetired(p, p, 1) + 1;
     if (rcount >= SCAN_THRESHOLD * hcount_.load()) {
