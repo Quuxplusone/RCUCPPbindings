@@ -40,7 +40,7 @@ int main(int argc, char **argv)
     std::cout << "Deletion with rcu_signal rcu_domain\n";
     foo1.a = 45;
     foo1.retire(my_cb);
-    rs.barrier();
+    rcu_barrier();
 
     return 0;
 }
